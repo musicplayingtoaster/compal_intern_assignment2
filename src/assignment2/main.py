@@ -25,5 +25,7 @@ async def create_todo_(data: Annotated[Todo, Form()]):
 
 def main() -> None:
     database.init_todo_list()
-    uvicorn.run(app, host="127.0.0.1", port=3000) 
-    # change host to 0.0.0.0 when packaging for docker on azure vm
+    uvicorn.run(app, host="0.0.0.0", port=3000) 
+
+if __name__ == "__main__":
+    main()

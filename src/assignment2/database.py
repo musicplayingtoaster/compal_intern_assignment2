@@ -2,6 +2,8 @@
 # i dont know what im doing but yea wahahahaha
 import sqlite3
 from pydantic import BaseModel
+'This stuff hasnt been debugged yet btw. I have no clue if it actually works or not :/'
+
 
 'creates table in db if it doesnt already exist || item = todo item, resolved = done/not done'
 'tuple order: [0=id,1=todo,2=resolved]'
