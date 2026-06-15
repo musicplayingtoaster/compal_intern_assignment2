@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import FastAPI, Form
 from pydantic import BaseModel
 import uvicorn
-import database
+#import database
 
 class Todo(BaseModel):
     todo: str
@@ -18,7 +18,7 @@ app = FastAPI()
 @app.post("/submit")
 async def create_todo_(data: Annotated[Todo, Form()]):
     print("hit python")
-    database.add_todo(data)
+    #database.add_todo(data)
     return data
 
 @app.get("/")
