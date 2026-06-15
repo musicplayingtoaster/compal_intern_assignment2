@@ -20,11 +20,14 @@ async def create_todo_(data: Annotated[Todo, Form()]):
     print("hit python")
     database.add_todo(data)
     return data
-    
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 
 def main() -> None:
-    database.init_todo_list()
+    #database.init_todo_list()
     uvicorn.run(app, host="0.0.0.0", port=3000) 
 
 if __name__ == "__main__":
