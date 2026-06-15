@@ -11,7 +11,7 @@ class Todo(BaseModel):
     resolved: int = 0
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="src/assignment2/static"), name="static")
+app.mount("/", StaticFiles(directory="src/assignment2/static"), name="static")
 
 # use a get to read what is currently in the database
 # use a post to create a new todo
@@ -23,10 +23,6 @@ async def create_todo_(data: Annotated[Todo, Form()]):
     print("hit python")
     #database.add_todo(data)
     return data
-
-@app.get("/")
-def read_root():
-    return FileResponse("static/index.html")
 
 
 def main() -> None:
