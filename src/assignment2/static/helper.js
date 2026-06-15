@@ -42,7 +42,7 @@ todo_list.addEventListener('change', function(event){
 
         if (checkbox.checked) {
             fetch('/update', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -53,7 +53,7 @@ todo_list.addEventListener('change', function(event){
             .catch(error => console.error("Error:", error));
         } else {
             fetch('/update', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },

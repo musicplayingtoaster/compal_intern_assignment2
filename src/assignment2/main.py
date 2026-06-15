@@ -37,7 +37,7 @@ async def delete_todo(id: Annotated[int, Body()]):
     print("probably deleted")
     return "deleted"
 
-@app.post("/update") # Note: "todo" is empty. this is just for transfering data for resolved
+@app.put("/update") # Note: "todo" is empty. this is just for transfering data for resolved
 async def update_todo(data: Todo):
     print("update?")
     database.update_todo(data.id, data.resolved)
