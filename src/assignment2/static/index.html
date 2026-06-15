@@ -5,21 +5,22 @@
           content="width=device-width, initial-scale=1, shrink-to-fit=no, 
                    maximum-scale=1.0, user-scalable=0">
     <title>ToDo or Not ToDo</title>
-    <link rel="stylesheet" href="">
+    <link rel="stylesheet" href="stylesheet.css">
 </head>
 <body>
+    <h1>
+        A Todo List :D
+    </h1>
     <p>
-        I would say a few things here but the emptiness kinda bores a hole through my motivation
+        Though I rarely follow todo lists...
     </p>
-    <p>
-        Also as a note to self to remember to search up using fast api to allow communication
-        between html and python
-    </p>
-
     <form id="todo_form", action="/submit", method="POST">
         <label for="todo">Insert Item To Do:</label>
         <input type="text" id="todo" name="todo">
         <input type="submit" value="Submit">
     </form>
+
+    <div class="todo_list"></div>
+
     <script type="text/javascript" src="helper.js"></script>
 </body>

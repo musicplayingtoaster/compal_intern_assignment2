@@ -1,0 +1,9 @@
+
+body {
+    color:black
+}
+
+.todo_item:has(input[type="checkbox"]:checked) label {
+    text-decoration: line-through;
+    color: #888888;
+}

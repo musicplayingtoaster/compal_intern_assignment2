@@ -34,6 +34,7 @@ def retrieve_todo(todo:BaseModel) -> tuple:
     except sqlite3.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
+
 def retrieve_latest_todo() -> tuple:
     try:
         with sqlite3.connect("todo_database.db") as connection:
@@ -42,29 +43,46 @@ def retrieve_latest_todo() -> tuple:
             return cursor.fetchone()
     except sqlite3.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
-            
+
+def retrieve_all_todos() -> tuple:
+    try:
+        with sqlite3.connect("todo_database.db") as connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM todo_list ORDER BY id")
+            all_rows = cursor.fetchall()
+
+            for row in all_rows:
+                print(row)
+
+            return all_rows
+    except sqlite3.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
 
 def add_todo(todo:BaseModel) -> None:
     try:
         with sqlite3.connect("todo_database.db") as connection:
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO todo (todo, resolved) VALUES (:todo, :resolved)", todo.model_dump())
+            cursor.execute("INSERT INTO todo_list (todo, resolved) VALUES (:todo, :resolved)", todo.model_dump())
             connection.commit()
     except sqlite3.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
 
 
-def remove_todo(todo:BaseModel) -> None:
+def remove_todo(primary_key:int) -> None:
     try:
         with sqlite3.connect("todo_database.db") as connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT todo_id FROM todo_list WHERE todo = :todo", todo.model_dump())
-            row = cursor.fetchone()
+            cursor.execute("DELETE FROM todo_list WHERE id = ?", (primary_key,))
+            connection.commit()
+    except sqlite3.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
 
-            if row:
-                primary_key = row[0]
-                cursor.execute("DELETE FROM todo_list WHERE id = ?", (primary_key,))
-                connection.commit()
+def update_todo(primary_key:int, resolved:int) ->None:
+    try:
+        with sqlite3.connect("todo_database.db") as connection:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE todo_list SET resolved = ? WHERE id = ?", (resolved, primary_key,))
+            connection.commit()
     except sqlite3.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
