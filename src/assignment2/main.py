@@ -18,7 +18,7 @@ app.mount("/", StaticFiles(directory="src/assignment2/static", html=True), name=
 # use a delete to delete (wow no way)
 # use a put to update its resolved status
 
-@app.post("/submit")
+@app.post("/submit/")
 async def create_todo_(data: Annotated[Todo, Form()]):
     print("hit python")
     #database.add_todo(data)
