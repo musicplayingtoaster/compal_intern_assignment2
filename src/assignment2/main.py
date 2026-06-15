@@ -1,12 +1,12 @@
-from fastapi import FastAPI
+from typing import Annotated
+from fastapi import FastAPI, Form
 from pydantic import BaseModel
 import uvicorn
 import database
 
 class Todo(BaseModel):
-    id: int
     todo: str
-    resolved: int
+    resolved: int = 0
 
 app = FastAPI()
 
@@ -15,12 +15,12 @@ app = FastAPI()
 # use a delete to delete (wow no way)
 # use a put to update its resolved status
 
-
-@app.post("/create-todo/")
-async def update_todo_list(todo: str):
-    database.add_todo(todo)
-    new_todo = database.retrieve_latest_todo()
-    return {"todo": {new_todo[1]}, "resolved": {new_todo[2]}}
+@app.post("/submit")
+async def create_todo_(data: Annotated[Todo, Form()]):
+    print("hit python")
+    database.add_todo(data)
+    return data
+    
 
 
 def main() -> None:
