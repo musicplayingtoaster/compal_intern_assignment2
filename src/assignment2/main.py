@@ -11,7 +11,7 @@ class Todo(BaseModel):
     resolved: int = 0
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="./static"), name="static")
 
 # use a get to read what is currently in the database
 # use a post to create a new todo
