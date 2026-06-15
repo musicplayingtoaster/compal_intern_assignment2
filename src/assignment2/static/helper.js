@@ -9,7 +9,7 @@ form.addEventListener('submit', function(event) {
         console.log(`${key}: ${value}`);
     }
     
-    fetch('/submit', {
+    fetch('/submit/', {
         method: 'POST',
         body: formData
     })
