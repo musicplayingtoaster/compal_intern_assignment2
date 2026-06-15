@@ -1,6 +1,7 @@
-
 body {
-    color:black
+    font-family: 'Courier New', Courier, monospace;
+    color:black;
+    place-items: center;
 }
 
 .todo_item:has(input[type="checkbox"]:checked) label {
