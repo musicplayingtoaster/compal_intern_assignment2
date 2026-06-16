@@ -1,6 +1,6 @@
 import sqlite3
 from pydantic import BaseModel
-
+'Deprecated: Moving to PostgreSQL'
 
 'creates table in db if it doesnt already exist || item = todo item, resolved = done/not done'
 'tuple order: [0=id,1=todo,2=resolved]'
