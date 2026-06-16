@@ -5,21 +5,27 @@ form.addEventListener('submit', function(event) {
     event.preventDefault();
     const formData = new FormData(this);
     
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
+    // for (let [key, value] of formData.entries()) {
+    //     console.log(`${key}: ${value}`);
+    // }
+
+    //let [data] = formData.entries();
+    console.log(data);
+    if (data[1] != '') {
+            fetch('/submit', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            createTodo(data)
+        })
+        .catch(error => {
+            console.error("Error: error")
+        });
+
+        form.reset()
     }
-
-    fetch('/submit', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => createTodo(data))
-    .catch(error => {
-        console.error("Error: error")
-    });
-
-    form.reset()
 });
 
 window.addEventListener("load", () => {
