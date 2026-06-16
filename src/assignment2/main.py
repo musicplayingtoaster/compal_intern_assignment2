@@ -38,10 +38,11 @@ async def update_todo(data: Todo):
     database.update_todo(data.id, data.resolved)
     return "updated"
 
+# app mount at the end, as if before the static file application will capture the request before the @app stuff does
+# also you can't put this in main() ig... weird...
+app.mount("/", StaticFiles(directory="src/assignment2/static", html=True), name="static")
 
 def main() -> None:
-    # app mount at the end, as if before the static file application will capture the request before the @app stuff does
-    app.mount("/", StaticFiles(directory="src/assignment2/static", html=True), name="static")
     database.init_todo_list()
     uvicorn.run(app, host="0.0.0.0", port=3000) 
 
