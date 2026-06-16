@@ -9,8 +9,8 @@ form.addEventListener('submit', function(event) {
     //     console.log(`${key}: ${value}`);
     // }
 
-    //let [data] = formData.entries();
-    console.log(data);
+    let [data] = formData.entries();
+    //console.log(data);
     if (data[1] != '') {
             fetch('/submit', {
             method: 'POST',
