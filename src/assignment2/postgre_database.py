@@ -5,7 +5,6 @@ import psycopg2
 # Then make another service for database where Postgre will run on for "compose.yaml" (on Azure VM)
 
 credentials = {
-    "host": "localhost",
     "database": "todo_list_database",
 }
 
