@@ -4,39 +4,59 @@ import psycopg2
 # Adapt "database.py" code to run with Postgre instead
 # Then make another service for database where Postgre will run on for "compose.yaml" (on Azure VM)
 
-DATABASE = ""
-USER = ""
-PASSWORD = ""
+credentials = {
+    "host": "localhost",
+    "database": "todo_list_database",
+}
 
-# if a login sequence is required
-def login():
-    pass
 
-def init_todo_list() -> None:
+def retrieve_latest_todo() -> tuple:
     try:
-        with psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD) as connection:
+        with psycopg2.connect(**credentials) as connection:
             cursor = connection.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS todo_list (
-                    id serial PRIMARY KEY,
-                    todo varchar NOT NULL,
-                    resolved integer NOT NULL
-                )
-            ''') 
-            # While PostgreSQL has a boolean type, i just don't want to refactor the rest of the code cuz im lazy
-            # sorry.
-            
+            cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
+            latest_row = cursor.fetchone()
+            return latest_row
+    except psycopg2.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
+
+def retrieve_all_todos() -> tuple:
+    try:
+        with psycopg2.connect(**credentials) as connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM todo_list ORDER BY id")
+            all_rows = cursor.fetchall()
+
+            for row in all_rows:
+                print(row)
+
+            return all_rows
+    except psycopg2.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
+
+def add_todo(todo:BaseModel) -> None:
+    try:
+        with psycopg2.connect(**credentials) as connection:
+            cursor = connection.cursor()
+            cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s)", todo.model_dump()) # resolved default value = 0
             connection.commit()
     except psycopg2.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
-# copy from here
-def retrieve_latest_todo() -> tuple:
+def remove_todo(primary_key:int) -> tuple:
     try:
-        with psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD) as connection:
+        with psycopg2.connect(**credentials) as connection:
             cursor = connection.cursor()
-            cursor.execute()
-            
+            cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
+            connection.commit()
+    except psycopg2.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
+
+def update_todo(primary_key:int, resolved:int) -> tuple:
+    try:
+        with psycopg2.connect(**credentials) as connection:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s", (resolved, primary_key,))
             connection.commit()
     except psycopg2.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
