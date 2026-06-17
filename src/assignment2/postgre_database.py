@@ -9,7 +9,6 @@ connection_params = {
     "port": 5432,
     "database": "todo_list_db",
     "user": "db_user",
-    "password": "1234",
 }
 
 def init_todo_list() -> None:
