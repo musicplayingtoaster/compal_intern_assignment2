@@ -9,6 +9,21 @@ credentials = {
     "database": "todo_list_database",
 }
 
+def init_todo_list() -> None:
+    try:
+        with psycopg2.connect(**credentials) as connection:
+            cursor = connection.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS todo_list (
+                    id SERIAL PRIMARY KEY,
+                    todo TEXT NOT NULL,
+                    resolved INTEGER NOT NULL DEFAULT 0
+                )
+            ''')
+            connection.commit()
+    except psycopg2.OperationalError as e:
+        print("Failed to open database:", e, "(in short, you failed lmao.)")
+
 
 def retrieve_latest_todo() -> tuple:
     try:
