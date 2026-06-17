@@ -4,10 +4,16 @@ import psycopg2
 # Adapt "database.py" code to run with Postgre instead
 # Then make another service for database where Postgre will run on for "compose.yaml" (on Azure VM)
 
+connection_params = {
+    "host": "postgres-db", 
+    "port": 5432,
+    "database": "todo_list",
+    "user": "db_user"
+}
 
 def init_todo_list() -> None:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS todo_list (
@@ -23,7 +29,7 @@ def init_todo_list() -> None:
 
 def retrieve_latest_todo() -> tuple:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
             latest_row = cursor.fetchone()
@@ -33,7 +39,7 @@ def retrieve_latest_todo() -> tuple:
 
 def retrieve_all_todos() -> tuple:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM todo_list ORDER BY id")
             all_rows = cursor.fetchall()
@@ -47,7 +53,7 @@ def retrieve_all_todos() -> tuple:
 
 def add_todo(todo:BaseModel) -> None:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s)", todo.model_dump()) # resolved default value = 0
             connection.commit()
@@ -56,7 +62,7 @@ def add_todo(todo:BaseModel) -> None:
 
 def remove_todo(primary_key:int) -> tuple:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
             connection.commit()
@@ -65,7 +71,7 @@ def remove_todo(primary_key:int) -> tuple:
 
 def update_todo(primary_key:int, resolved:int) -> tuple:
     try:
-        with psycopg2.connect() as connection:
+        with psycopg2.connect(**connection_params) as connection:
             cursor = connection.cursor()
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s", (resolved, primary_key,))
             connection.commit()
