@@ -7,7 +7,7 @@ import psycopg2
 connection_params = {
     "host": "postgres-db", 
     "port": 5432,
-    "database": "todo_list",
+    "database": "todo_list_db",
     "user": "db_user",
     "password": "1234",
 }
