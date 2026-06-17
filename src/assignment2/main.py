@@ -48,7 +48,7 @@ app.mount("/", StaticFiles(directory="src/assignment2/static", html=True), name=
 def main() -> None:
     postgre_database.init_todo_list()
     # database.init_todo_list()
-    uvicorn.run(app, host="0.0.0.0", port=3000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
 
 if __name__ == "__main__":
     main()
