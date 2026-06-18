@@ -11,7 +11,7 @@ load_dotenv()
 connection_params = {
     "host": os.environ.get('DB_HOST'), 
     "port": os.environ.get('DB_PORT'),
-    "database": os.environ.get('DB_DATABASE'),
+    "dbname": os.environ.get('DB_DATABASE'),
     "user": os.environ.get('DB_USER'),
     "password": os.environ.get('DB_PASSWORD'),
 }
@@ -35,7 +35,7 @@ def init_todo_list() -> None:
 async def retrieve_latest_todo() -> tuple:
     try:
         async with psycopg.connect(**connection_params) as connection:
-            async with connection.cursor() as cursor:
+            async with connection.cursor() as cursor:   
                 await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
                 latest_row = cursor.fetchone()
                 return latest_row

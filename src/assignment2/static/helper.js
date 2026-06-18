@@ -36,11 +36,11 @@ form.addEventListener('submit', async function(event) {
             console.error("Error:", error)
         });
 
-        console.log("about to send websocket message")
-        ws.send("awaiting table data")
-        console.log("sent i think")
+        // console.log("about to send websocket message")
+        // ws.send("awaiting table data")
+        // console.log("sent i think")
 
-        form.reset();
+        // form.reset();
     }
 });
 
