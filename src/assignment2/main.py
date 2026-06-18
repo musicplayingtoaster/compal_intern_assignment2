@@ -15,7 +15,7 @@ app = FastAPI()
 
 @app.post("/submit")
 async def create_todo(data: Annotated[Todo, Form()]):
-    postgre_database.add_todo(data)
+    await postgre_database.add_todo(data)
     # websocket to tell all clients new todo has been added and push change that way
     # do not return the retrieve
 
