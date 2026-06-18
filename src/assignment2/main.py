@@ -1,10 +1,11 @@
-from typing import Annotated
-from fastapi import FastAPI, Form, Body
+from typing import Annotated, List
+from fastapi import FastAPI, Form, Body, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 from . import database, postgre_database
+import json
 
 class Todo(BaseModel):
     id: int | None = None
@@ -16,10 +17,14 @@ app = FastAPI()
 @app.post("/submit")
 async def create_todo(data: Annotated[Todo, Form()]):
     postgre_database.add_todo(data)
-    return postgre_database.retrieve_latest_todo()
+    # websocket to tell all clients new todo has been added and push change that way
+    # do not return the retrieve
+
+    #return postgre_database.retrieve_latest_todo()
 
     # database.add_todo(data)
     # return database.retrieve_latest_todo()
+    return "added"
 
 @app.get("/load")
 async def load_todos():
@@ -40,6 +45,44 @@ async def update_todo(data: Todo):
     postgre_database.update_todo(data.id, data.resolved)
     # database.update_todo(data.id, data.resolved)
     return "updated"
+
+
+# Websocket stuff
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+    
+    # connection needs to be async as it requires waiting to ensure the websocket connection from client is successful
+    async def connect(self, websocket:WebSocket):
+        await websocket.accept()
+        print("connected:", websocket)
+        self.active_connections.append(websocket)
+    
+    # who cares about waiting to confirm kicking someone off amirite?
+    def disconnect(self, websocket:WebSocket):
+        self.active_connections.remove(websocket)
+    
+    async def broadcast(self, data):
+        for connection in self.active_connections:
+            try:
+                print("attempting to send data:", data, "to ", connection)
+                await connection.send_json(list(data))
+                print("sent probably")
+            except Exception:
+                pass
+
+manager = ConnectionManager()
+
+@app.websocket("/ws")
+async def handle_websockets(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive()
+            recent = database.retrieve_latest_todo()
+            await manager.broadcast(recent)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 # app mount at the end, as if before the static file application will capture the request before the @app stuff does
 # also you can't put this in main() ig... weird...

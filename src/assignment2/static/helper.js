@@ -1,7 +1,18 @@
-const form = document.getElementById('todo_form')
-const todo_list = document.querySelector('.todo_list')
+const form = document.getElementById('todo_form');
+const todo_list = document.querySelector('.todo_list');
+const ws = new WebSocket("ws://localhost:8000/ws");
 
-form.addEventListener('submit', function(event) {
+ws.onopen = () => {
+    console.log("Successfully connected to Websocket Server I guess")
+};
+
+ws.onmessage = (event) => { // websocket message recieved from client, updates page
+    console.log("message recieved")
+    let todo = JSON.parse(event.data)
+    createTodo(todo[0], todo[1])
+};
+
+form.addEventListener('submit', async function(event) {
     event.preventDefault();
     const formData = new FormData(this);
     
@@ -12,19 +23,24 @@ form.addEventListener('submit', function(event) {
     let [data] = formData.entries();
     //console.log(data);
     if (data[1] != '') {
-            fetch('/submit', {
+        await fetch('/submit', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
-            createTodo(data)
+            console.log(data);
+            // createTodo(data);
         })
         .catch(error => {
-            console.error("Error: error")
+            console.error("Error:", error)
         });
 
-        form.reset()
+        console.log("about to send websocket message")
+        ws.send("awaiting table data")
+        console.log("sent i think")
+
+        form.reset();
     }
 });
 
@@ -35,9 +51,9 @@ window.addEventListener("load", () => {
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data)
+        console.log(data);
         data.forEach(element => {
-            createTodo(element)
+            createTodo(element[0], element[1], element[2]);
         });
     })
 })
@@ -72,21 +88,20 @@ todo_list.addEventListener('change', function(event){
     }
 });
 
-
-function createTodo(data) {
+function createTodo(id, todo, resolved = 0) {
     const todoDiv = document.createElement('div');
-    console.log(data);
+    console.log(id, todo, resolved);
 
     // note: 0=primarykey,1=todostring,2=resolved
     todoDiv.className = "todo_item";
-    todoDiv.id = data[0].toString();
+    todoDiv.id = id.toString();
     todoDiv.innerHTML = `
     <input id="todo" name="resolve" type="checkbox">
-    <label for="todo">${data[1]}</label>
-    <button id="delete" onclick="deleteSelf(${data[0]})" type="button">Delete</button>
+    <label for="todo">${todo}</label>
+    <button id="delete" onclick="deleteSelf(${id})" type="button">Delete</button>
     `;
     todo_list.appendChild(todoDiv);
-    if (data[2] == 1){
+    if (resolved == 1){
         todoDiv.querySelector('input').checked = true;
     }
 }
@@ -99,7 +114,7 @@ function deleteSelf(id){
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data)
+        console.log(data);
         if (data == "deleted") {
             document.getElementById(id.toString()).remove();
         }
