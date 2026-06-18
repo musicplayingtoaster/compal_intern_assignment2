@@ -18,6 +18,7 @@ async def create_todo(data: Annotated[Todo, Form()]):
     await postgre_database.add_todo(data)
     # websocket to tell all clients new todo has been added and push change that way
     # do not return the retrieve
+    await manager.broadcast(database.retrieve_latest_todo())
 
     #return postgre_database.retrieve_latest_todo()
 
@@ -72,16 +73,16 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@app.websocket("/ws")
-async def handle_websockets(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive()
-            recent = database.retrieve_latest_todo()
-            await manager.broadcast(recent)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+# @app.websocket("/ws")
+# async def handle_websockets(websocket: WebSocket):
+#     await manager.connect(websocket)
+#     try:
+#         while True:
+#             await websocket.receive()
+#             recent = database.retrieve_latest_todo()
+#             await manager.broadcast(recent)
+#     except WebSocketDisconnect:
+#         manager.disconnect(websocket)
 
 # app mount at the end, as if before the static file application will capture the request before the @app stuff does
 # also you can't put this in main() ig... weird...
