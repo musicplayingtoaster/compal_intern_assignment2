@@ -1,14 +1,19 @@
 from pydantic import BaseModel
 import psycopg2
+import os
+from dotenv import load_dotenv
 
 # Adapt "database.py" code to run with Postgre instead
 # Then make another service for database where Postgre will run on for "compose.yaml" (on Azure VM)
 
+load_dotenv()
+
 connection_params = {
-    "host": "postgres-db", 
-    "port": 5432,
-    "database": "todo_list_db",
-    "user": "db_user",
+    "host": os.environ.get('DB_HOST'), 
+    "port": os.environ.get('DB_PORT'),
+    "database": os.environ.get('DB_DATABASE'),
+    "user": os.environ.get('DB_USER'),
+    "password": os.environ.get('DB_PASSWORD'),
 }
 
 def init_todo_list() -> None:
