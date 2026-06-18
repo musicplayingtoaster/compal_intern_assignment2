@@ -5,7 +5,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 from . import database, postgre_database
-import json
 
 class Todo(BaseModel):
     id: int | None = None
