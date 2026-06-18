@@ -36,9 +36,9 @@ form.addEventListener('submit', async function(event) {
         //     console.error("Error:", error)
         // });
 
-        console.log("about to send form through websocket")
-        ws.send(JSON.stringify(formData))
-        console.log("sent i think")
+        console.log("about to send form through websocket", formData);
+        ws.send(JSON.stringify(Object.fromEntries(formData.entries())));
+        console.log("sent i think");
 
         // form.reset();
     }

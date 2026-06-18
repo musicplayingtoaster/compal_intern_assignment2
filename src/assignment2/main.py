@@ -15,15 +15,14 @@ class Todo(BaseModel):
 app = FastAPI()
 
 @app.post("/submit")
-async def create_todo(data: Annotated[Todo, Form()]):
-    await postgre_database.add_todo(data)
+async def create_todo(data: Todo):
     # websocket to tell all clients new todo has been added and push change that way
     # do not return the retrieve
 
     #return postgre_database.retrieve_latest_todo()
 
     # database.add_todo(data)
-    return database.retrieve_latest_todo()
+    return await postgre_database.add_todo(data)
 
 @app.get("/load")
 async def load_todos():
@@ -79,7 +78,8 @@ async def handle_websockets(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
             print(data)
-            recent = await create_todo(Todo.model_validate_json(data))
+            print(type(data))
+            recent = await create_todo(Todo.model_validate(data))
             await manager.broadcast(recent)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
