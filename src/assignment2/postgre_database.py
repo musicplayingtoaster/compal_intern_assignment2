@@ -58,7 +58,7 @@ def retrieve_all_todos() -> tuple:
 
 async def add_todo(todo:BaseModel) -> tuple:
     try:
-        async with psycopg.connect(**connection_params) as connection:
+        async with await psycopg.AsyncConnection.connect(**connection_params) as connection:
             async with connection.cursor() as cursor:
                 await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s)", todo.model_dump()) # resolved default value = 0
                 connection.commit()
