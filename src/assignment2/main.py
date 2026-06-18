@@ -78,6 +78,7 @@ async def handle_websockets(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+            print(data)
             recent = await create_todo(Todo.model_validate_json(data))
             await manager.broadcast(recent)
     except WebSocketDisconnect:
