@@ -1,9 +1,6 @@
 const form = document.getElementById('todo_form');
 const todo_list = document.querySelector('.todo_list');
-
-console.log(window.location.host)
-
-const ws = new WebSocket("ws://0.0.0.0:8000/ws");
+const ws = new WebSocket(`ws://${window.location.host}/ws`);
 
 ws.onopen = () => {
     console.log("Successfully connected to Websocket Server I guess")
