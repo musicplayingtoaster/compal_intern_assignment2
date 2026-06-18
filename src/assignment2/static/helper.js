@@ -23,22 +23,22 @@ form.addEventListener('submit', async function(event) {
     let [data] = formData.entries();
     //console.log(data);
     if (data[1] != '') {
-        await fetch('/submit', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            // createTodo(data);
-        })
-        .catch(error => {
-            console.error("Error:", error)
-        });
+        // await fetch('/submit', {
+        //     method: 'POST',
+        //     body: formData
+        // })
+        // .then(response => response.json())
+        // .then(data => {
+        //     console.log(data);
+        //     // createTodo(data);
+        // })
+        // .catch(error => {
+        //     console.error("Error:", error)
+        // });
 
-        // console.log("about to send websocket message")
-        // ws.send("awaiting table data")
-        // console.log("sent i think")
+        console.log("about to send form through websocket")
+        ws.send(JSON.stringify(formData))
+        console.log("sent i think")
 
         // form.reset();
     }
