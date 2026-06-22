@@ -65,7 +65,6 @@ class ConnectionManager:
             try:
                 print("attempting to send data:", data, "to ", connection)
                 await connection.send_json(data)
-                print("sent probably")
             except Exception:
                 pass
 
@@ -77,8 +76,6 @@ async def handle_websockets(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            print(data)
-            print(type(data))
             recent = await create_todo(Todo.model_validate(data))
             await manager.broadcast(json.dumps(recent))
     except WebSocketDisconnect:

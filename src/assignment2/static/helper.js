@@ -21,11 +21,8 @@ ws.onclose = (event) => {
 }
 
 ws.onmessage = (event) => { // websocket message recieved from client, updates page
-    console.log("message recieved")
     console.log(event)
     let todo = JSON.parse(JSON.parse(event.data))
-    console.log(todo)
-    console.log(typeof(todo))
     createTodo(todo[0], todo[1])
 };
 
@@ -78,30 +75,18 @@ window.addEventListener("load", () => {
 todo_list.addEventListener('change', function(event){
     if (event.target && event.target.type === 'checkbox') {
         const checkbox = event.target;
-
-        if (checkbox.checked) {
-            fetch('/update', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({"id":checkbox.parentElement.id, "todo":"", "resolved":1}),
-            })
-            .then(response => response.json())
-            .then(data => console.log(data))
-            .catch(error => console.error("Error:", error));
-        } else {
-            fetch('/update', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({"id":checkbox.parentElement.id, "todo":"", "resolved":0}),
-            })
-            .then(response => response.json())
-            .then(data => console.log(data))
-            .catch(error => console.error("Error:", error));
-        }
+        fetch('/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify((checkbox.checked) ? 
+            {"id":checkbox.parentElement.id, "todo":"", "resolved":1} : 
+            {"id":checkbox.parentElement.id, "todo":"", "resolved":0}),
+        })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error("Error:", error));
     }
 });
 
