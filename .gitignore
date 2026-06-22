@@ -11,7 +11,7 @@ wheels/
 
 # Secrets
 *.env
-secrets/*
+secrets/
 
 # other
 
