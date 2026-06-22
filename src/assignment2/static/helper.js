@@ -1,6 +1,6 @@
 const form = document.getElementById('todo_form');
 const todo_list = document.querySelector('.todo_list');
-const ws = new WebSocket(`ws://${window.location.host}/ws`);
+let ws = new WebSocket(`ws://${window.location.host}/ws`);
 let reconnectInterval = 1000;
 const maxReconnectInterval = 30000;
 
