@@ -34,7 +34,7 @@ def init_todo_list() -> None:
 
 async def retrieve_latest_todo() -> tuple:
     try:
-        async with psycopg.connect(**connection_params) as connection:
+        async with await psycopg.AsyncConnection.connect(**connection_params) as connection:
             async with connection.cursor() as cursor:
                 await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
                 latest_row = await cursor.fetchone()
@@ -62,7 +62,7 @@ async def add_todo(todo:BaseModel) -> tuple:
             async with connection.cursor() as cursor:
                 await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s)", todo.model_dump()) # resolved default value = 0
                 await connection.commit()
-                return retrieve_latest_todo()
+                return await retrieve_latest_todo()
     except psycopg.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
