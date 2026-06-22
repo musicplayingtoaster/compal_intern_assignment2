@@ -80,7 +80,7 @@ async def handle_websockets(websocket: WebSocket):
             print(data)
             print(type(data))
             recent = await create_todo(Todo.model_validate(data))
-            await manager.broadcast(recent)
+            await manager.broadcast(recent.model_dump(mode="json"))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
