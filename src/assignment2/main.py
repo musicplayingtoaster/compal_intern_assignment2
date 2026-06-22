@@ -64,7 +64,7 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 print("attempting to send data:", data, "to ", connection)
-                await connection.send_json(list(data))
+                await connection.send_json(data)
                 print("sent probably")
             except Exception:
                 pass
