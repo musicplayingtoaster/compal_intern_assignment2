@@ -8,7 +8,10 @@ ws.onopen = () => {
 
 ws.onmessage = (event) => { // websocket message recieved from client, updates page
     console.log("message recieved")
+    console.log(event)
     let todo = JSON.parse(event.data)
+    console.log(todo)
+    console.log(typeof(todo))
     createTodo(todo[0], todo[1])
 };
 
