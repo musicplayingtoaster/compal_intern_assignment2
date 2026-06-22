@@ -1,10 +1,24 @@
 const form = document.getElementById('todo_form');
 const todo_list = document.querySelector('.todo_list');
 const ws = new WebSocket(`ws://${window.location.host}/ws`);
+let reconnectInterval = 1000;
+const maxReconnectInterval = 30000;
 
 ws.onopen = () => {
     console.log("Successfully connected to Websocket Server I guess")
 };
+
+ws.onclose = (event) => {
+    console.warn(`WebSocket closed. Code: ${event.code}. Reason: ${event.reason}`);
+    if (event.code !== 1000) {
+        console.log(`attempting reconnection`)
+
+        setTimeout(() => {
+            reconnectInterval = Math.min(reconnectInterval * 2, maxReconnectInterval);
+            ws = new WebSocket(`ws://${window.location.host}/ws`);
+        }, reconnectInterval);
+    }
+}
 
 ws.onmessage = (event) => { // websocket message recieved from client, updates page
     console.log("message recieved")
