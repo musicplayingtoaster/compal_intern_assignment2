@@ -43,7 +43,7 @@ form.addEventListener('submit', async function(event) {
         ws.send(JSON.stringify(Object.fromEntries(formData.entries())));
         console.log("sent i think");
 
-        // form.reset();
+        form.reset();
     }
 });
 
