@@ -73,6 +73,7 @@ def retrieve_all_todos() -> tuple:
             for key in connection_cache.scan_iter(match='todo:*'):
                 todos.append(connection_cache.get(key))
                 cached_primary_keys.append(key[5:])
+                print(f"retrieved from cache: {cached_primary_keys}")
 
         with psycopg.connect(**connection_params_db) as connection_db:
             cursor = connection_db.cursor()
@@ -88,7 +89,7 @@ async def add_todo(todo:Todo) -> tuple:
     try:
         async with await psycopg.AsyncConnection.connect(**connection_params_db) as connection_db, aioredis.Redis(**connection_params_cache) as connection_cache:
             async with connection_db.cursor() as cursor:
-                await cursor.execute("INSERT INTO todo_list (todo) VALUES (%s) RETURNING id", (todo.model_dump(),)) # resolved default value = 0
+                await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
                 await connection_db.commit()
 
                 # grabs primary key of just entered and creates a cache in redis that lasts 30 seconds with the model dump
