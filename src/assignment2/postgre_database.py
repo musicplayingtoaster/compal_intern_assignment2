@@ -48,7 +48,7 @@ async def retrieve_latest_todo() -> tuple:
     try:
         global latest_cache_key
         if latest_cache_key != None:
-            with aioredis.Redis(**connection_params_cache) as connection_cache:
+            async with aioredis.Redis(**connection_params_cache) as connection_cache:
                 todo = await connection_cache.get(latest_cache_key)
                 await print("retrieved from cache!")
                 if todo != None:
