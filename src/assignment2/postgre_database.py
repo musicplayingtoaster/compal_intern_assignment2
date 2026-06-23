@@ -93,8 +93,9 @@ async def add_todo(todo:Todo) -> tuple:
                 await connection_db.commit()
 
                 # grabs primary key of just entered and creates a cache in redis that lasts 30 seconds with the model dump
+                latest_row = cursor.fetchone()
                 global latest_cache_key
-                latest_cache_key = f"todo:{cursor.fetchone()[0]}"
+                latest_cache_key = f"todo:{latest_row[0]}"
                 await connection_cache.hsetex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
                 return await retrieve_latest_todo()
@@ -119,6 +120,7 @@ def update_todo(primary_key:int, resolved:int) -> tuple:
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (resolved, primary_key,))
             connection_db.commit()
 
-            connection_cache.hsetex(f"todo:{cursor.fetchone()[0]}", CACHETTL, Todo(primary_key, cursor.fetchone()[1], resolved).model_dump_json())
+            updated_row = cursor.fetchone()
+            connection_cache.hsetex(f"todo:{updated_row[0]}", CACHETTL, Todo(primary_key, cursor.fetchone()[1], resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
