@@ -5,6 +5,7 @@ import redis
 from redis.exceptions import RedisError
 import redis.asyncio as aioredis
 from dotenv import load_dotenv
+import re
 
 # I might need to change this name now that redis is in here
 
@@ -72,7 +73,8 @@ def retrieve_all_todos() -> tuple:
         with redis.Redis(**connection_params_cache) as connection_cache:
             for key in connection_cache.scan_iter(match='todo:*'):
                 todos.append(connection_cache.get(key))
-                cached_primary_keys.append(key[5:-1])
+
+                cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
             
             print(f"retrieved from cache: {cached_primary_keys}")
 
