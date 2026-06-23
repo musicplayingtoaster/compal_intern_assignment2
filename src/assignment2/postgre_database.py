@@ -96,7 +96,7 @@ async def add_todo(todo:Todo) -> tuple:
 
                 global latest_cache_key
                 latest_cache_key = f"todo:{await cursor.fetchone()}"
-                await connection_cache.hsetex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
+                await connection_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
                 return await retrieve_latest_todo()
     except psycopg.OperationalError as e:
@@ -120,6 +120,6 @@ def update_todo(primary_key:int, resolved:int) -> tuple:
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (resolved, primary_key,))
             connection_db.commit()
 
-            connection_cache.hsetex(f"todo:{primary_key}", CACHETTL, Todo(primary_key, cursor.fetchone(), resolved).model_dump_json())
+            connection_cache.setex(f"todo:{primary_key}", CACHETTL, Todo(primary_key, cursor.fetchone(), resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
