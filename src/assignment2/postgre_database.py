@@ -50,7 +50,7 @@ async def retrieve_latest_todo() -> tuple:
         if latest_cache_key != None:
             with aioredis.Redis(**connection_params_cache) as connection_cache:
                 todo = await connection_cache.get(latest_cache_key)
-                print("retrieved from cache!")
+                await print("retrieved from cache!")
                 if todo != None:
                     return Todo.model_validate_json(todo)
         
@@ -58,7 +58,7 @@ async def retrieve_latest_todo() -> tuple:
             async with connection_db.cursor() as cursor:
                 await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
                 latest_row = await cursor.fetchone()
-                print("retrieved from db!")
+                await print("retrieved from db!")
                 if latest_row != None:
                     return latest_row
         
