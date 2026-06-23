@@ -73,7 +73,8 @@ def retrieve_all_todos() -> tuple:
             for key in connection_cache.scan_iter(match='todo:*'):
                 todos.append(connection_cache.get(key))
                 cached_primary_keys.append(key[5:])
-                print(f"retrieved from cache: {cached_primary_keys}")
+            
+            print(f"retrieved from cache: {cached_primary_keys}")
 
         with psycopg.connect(**connection_params_db) as connection_db:
             cursor = connection_db.cursor()
@@ -81,6 +82,7 @@ def retrieve_all_todos() -> tuple:
             all_rows = cursor.fetchall()
             todos += all_rows
 
+        print(todos)
         return todos
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
@@ -92,8 +94,7 @@ async def add_todo(todo:Todo) -> tuple:
                 await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
                 await connection_db.commit()
 
-                # grabs primary key of just entered and creates a cache in redis that lasts 30 seconds with the model dump
-                latest_row = cursor.fetchone()
+                latest_row = await cursor.fetchone()
                 global latest_cache_key
                 latest_cache_key = f"todo:{latest_row[0]}"
                 await connection_cache.hsetex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
