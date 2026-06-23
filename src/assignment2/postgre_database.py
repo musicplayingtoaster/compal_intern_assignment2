@@ -1,11 +1,10 @@
+from .models import Todo
 import psycopg
 import os
 import redis
 from redis.exceptions import RedisError
 import redis.asyncio as aioredis
 from dotenv import load_dotenv
-from .main import Todo
-import ast
 
 # I might need to change this name now that redis is in here
 

@@ -1,15 +1,12 @@
 from typing import Annotated
 from fastapi import FastAPI, Form, Body, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from .models import Todo
 import uvicorn
-from . import database, postgre_database, redis_cache
+from . import database, postgre_database
 import json
 
-class Todo(BaseModel):
-    id: int | None = None
-    todo: str
-    resolved: int = 0
+
 
 app = FastAPI()
 
