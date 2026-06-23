@@ -1,10 +1,9 @@
-from typing import Annotated, List
+from typing import Annotated
 from fastapi import FastAPI, Form, Body, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
-from . import database, postgre_database
+from . import database, postgre_database, redis_cache
 import json
 
 class Todo(BaseModel):
