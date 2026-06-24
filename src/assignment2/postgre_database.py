@@ -67,7 +67,7 @@ async def retrieve_latest_todo() -> tuple:
         print("Failed to open database and/or cache:", e)
 
 def get_numeric_sort_key(key):
-    match = re.search(r'\d+', '', key[5:])
+    match = re.search(r'\d+', key[5:])
     return int(match.group()) if match else 0
 
 def retrieve_all_todos() -> tuple:
