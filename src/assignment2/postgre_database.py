@@ -53,7 +53,7 @@ async def retrieve_latest_todo() -> tuple:
                 todo = await connection_cache.get(latest_cache_key)
                 print("retrieved from cache!")
                 if todo != None:
-                    return Todo.model_validate_json(todo).model_dump()
+                    return Todo.model_validate_json(todo).model_dump().values()
         
         async with await psycopg.AsyncConnection.connect(**connection_params_db) as connection_db:
             async with connection_db.cursor() as cursor:
