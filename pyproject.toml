@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.136.3",
-    "psycopg[binary]>=3.3.4",
+    "psycopg[binary,pool]>=3.3.4",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.32",
     "redis>=8.0.0",

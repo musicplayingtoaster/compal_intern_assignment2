@@ -1,7 +1,7 @@
 from typing import Annotated
-from fastapi import FastAPI, Form, Body, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Body, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from .models import Todo
+from .helper import Todo, ConnectionManager
 import uvicorn
 from . import database, postgre_database
 import json
@@ -42,28 +42,6 @@ async def update_todo(data: Todo):
 
 
 # Websocket stuff
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-    
-    # connection needs to be async as it requires waiting to ensure the websocket connection from client is successful
-    async def connect(self, websocket:WebSocket):
-        await websocket.accept()
-        print("connected:", websocket)
-        self.active_connections.append(websocket)
-    
-    # who cares about waiting to confirm kicking someone off amirite?
-    def disconnect(self, websocket:WebSocket):
-        self.active_connections.remove(websocket)
-    
-    async def broadcast(self, data):
-        for connection in self.active_connections:
-            try:
-                print("attempting to send data:", data, "to ", connection)
-                await connection.send_json(data)
-            except Exception:
-                pass
-
 manager = ConnectionManager()
 
 @app.websocket("/ws")
