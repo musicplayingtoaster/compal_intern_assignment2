@@ -133,13 +133,14 @@ def remove_todo(primary_key:int) -> tuple:
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def update_todo(primary_key:int, resolved:int) -> tuple:
+def update_todo(primary_key:int, _resolved:int) -> tuple:
     try:
         with psycopg.connect(**connection_params_db) as connection_db, redis.Redis(**connection_params_cache) as connection_cache:
             cursor = connection_db.cursor()
-            cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (resolved, primary_key,))
+            cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
             connection_db.commit()
 
-            connection_cache.setex(f"todo:{primary_key}", CACHETTL, Todo(primary_key, cursor.fetchone(), resolved).model_dump_json())
+            updated_todo = cursor.fetchone()
+            connection_cache.setex(f"todo:{primary_key}", CACHETTL, Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
