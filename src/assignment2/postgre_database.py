@@ -25,8 +25,6 @@ connection_params_db = {
 connection_params_cache = {
     "host": os.environ.get('RDC_HOST'),
     "port": os.environ.get('RDC_PORT'),
-    "username": os.environ.get('RDC_USER'),
-    "password": os.environ.get('RDC_PASSWORD'),
     "db": 0,
     "decode_responses": True,
 }
