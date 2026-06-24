@@ -53,7 +53,7 @@ async def retrieve_latest_todo() -> tuple:
                 todo = await connection_cache.get(latest_cache_key)
                 print("retrieved from cache!")
                 if todo != None:
-                    return Todo.model_validate_json(todo).model_dump().values()
+                    return tuple(Todo.model_validate_json(todo).model_dump().values())
         
         async with await psycopg.AsyncConnection.connect(**connection_params_db) as connection_db:
             async with connection_db.cursor() as cursor:
@@ -72,7 +72,7 @@ def retrieve_all_todos() -> tuple:
         cached_primary_keys = []
         with redis.Redis(**connection_params_cache) as connection_cache:
             for key in connection_cache.scan_iter(match='todo:*'):
-                todos.append(Todo.model_validate_json(connection_cache.get(key)).model_dump().values())
+                todos.append(tuple(Todo.model_validate_json(connection_cache.get(key)).model_dump().values()))
 
                 cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
             
