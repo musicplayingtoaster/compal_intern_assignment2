@@ -66,15 +66,31 @@ async def retrieve_latest_todo() -> tuple:
     except (psycopg.OperationalError, RedisError) as e:
         print("Failed to open database and/or cache:", e)
 
+def get_numeric_sort_key(key):
+    match = re.search(r'\d+', '', key[5:])
+    return int(match.group()) if match else 0
+
 def retrieve_all_todos() -> tuple:
     try:
         todos = []
         cached_primary_keys = []
         with redis.Redis(**connection_params_cache) as connection_cache:
-            for key in connection_cache.scan_iter(match='todo:*'):
-                todos.append(tuple(Todo.model_validate_json(connection_cache.get(key)).model_dump().values()))
+            unordered_keys = list(connection_cache.scan_iter(match='todo:*'))
+            sorted_keys = sorted(unordered_keys, key=get_numeric_sort_key)
 
-                cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
+            pipeline = connection_cache.pipeline()
+            for key in sorted_keys:
+                pipeline.get(key)
+            cached_values = pipeline.execute()
+
+            for key, raw_json in zip(sorted_keys, cached_values):
+                if not raw_json:
+                    continue
+                try:
+                    todos.append(tuple(Todo.model_validate_json(connection_cache.get(key)).model_dump().values()))
+                    cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
+                except Exception:
+                    continue
             
             print(f"retrieved from cache: {cached_primary_keys}")
 
@@ -82,7 +98,7 @@ def retrieve_all_todos() -> tuple:
             cursor = connection_db.cursor()
             cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
             all_rows = cursor.fetchall()
-            todos += all_rows
+            todos = all_rows + todos
 
         print(todos)
         return todos
