@@ -97,9 +97,9 @@ async def add_todo(todo:Todo) -> tuple:
                 await connection_db.commit()
 
                 global latest_cache_key
-                primary_key = re.sub(r'\D+', '', await cursor.fetchone())
-                latest_cache_key = f"todo:{primary_key}"
-                todo.id = primary_key
+                primary_key = await cursor.fetchone()
+                latest_cache_key = f"todo:{primary_key[0]}"
+                todo.id = primary_key[0]
                 await connection_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
                 return await retrieve_latest_todo()
