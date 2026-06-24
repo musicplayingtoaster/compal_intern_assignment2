@@ -1,4 +1,4 @@
-from .helper import Todo
+from . import helper
 import psycopg
 import os
 import redis
@@ -31,7 +31,7 @@ connection_params_cache = {
 
 def init_todo_list() -> None:
     try:
-        with psycopg.connect(**connection_params_db) as connection_db:
+        with helper.get_pg_sync_conn() as connection_db:
             cursor = connection_db.cursor()
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS todo_list (
@@ -49,13 +49,13 @@ async def retrieve_latest_todo() -> tuple:
     try:
         global latest_cache_key
         if latest_cache_key != None:
-            async with aioredis.Redis(**connection_params_cache) as connection_cache:
+            async with helper.get_rdcache_async_conn() as connection_cache:
                 todo = await connection_cache.get(latest_cache_key)
                 print("retrieved from cache!")
                 if todo != None:
-                    return tuple(Todo.model_validate_json(todo).model_dump().values())
+                    return tuple(helper.Todo.model_validate_json(todo).model_dump().values())
         
-        async with await psycopg.AsyncConnection.connect(**connection_params_db) as connection_db:
+        async with await helper.get_pg_async_conn() as connection_db:
             async with connection_db.cursor() as cursor:
                 await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
                 latest_row = await cursor.fetchone()
@@ -74,7 +74,7 @@ def retrieve_all_todos() -> tuple:
     try:
         todos = []
         cached_primary_keys = []
-        with redis.Redis(**connection_params_cache) as connection_cache:
+        with helper.get_rdcache_sync_conn() as connection_cache:
             unordered_keys = list(connection_cache.scan_iter(match='todo:*'))
             sorted_keys = sorted(unordered_keys, key=get_numeric_sort_key)
 
@@ -87,14 +87,14 @@ def retrieve_all_todos() -> tuple:
                 if not raw_json:
                     continue
                 try:
-                    todos.append(tuple(Todo.model_validate_json(raw_json).model_dump().values()))
+                    todos.append(tuple(helper.Todo.model_validate_json(raw_json).model_dump().values()))
                     cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
                 except Exception:
                     continue
             
             print(f"retrieved from cache: {cached_primary_keys}")
 
-        with psycopg.connect(**connection_params_db) as connection_db:
+        with helper.get_pg_sync_conn() as connection_db:
             cursor = connection_db.cursor()
             cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
             all_rows = cursor.fetchall()
@@ -105,9 +105,9 @@ def retrieve_all_todos() -> tuple:
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-async def add_todo(todo:Todo) -> tuple:
+async def add_todo(todo:helper.Todo) -> tuple:
     try:
-        async with await psycopg.AsyncConnection.connect(**connection_params_db) as connection_db, aioredis.Redis(**connection_params_cache) as connection_cache:
+        async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
             async with connection_db.cursor() as cursor:
                 await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
                 await connection_db.commit()
@@ -124,7 +124,7 @@ async def add_todo(todo:Todo) -> tuple:
 
 def remove_todo(primary_key:int) -> tuple:
     try:
-        with psycopg.connect(**connection_params_db) as connection_db, redis.Redis(**connection_params_cache) as connection_cache:
+        with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
             cursor = connection_db.cursor()
             cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
             connection_db.commit()
@@ -135,12 +135,12 @@ def remove_todo(primary_key:int) -> tuple:
 
 def update_todo(primary_key:int, _resolved:int) -> tuple:
     try:
-        with psycopg.connect(**connection_params_db) as connection_db, redis.Redis(**connection_params_cache) as connection_cache:
+        with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
             cursor = connection_db.cursor()
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
             connection_db.commit()
 
             updated_todo = cursor.fetchone()
-            connection_cache.setex(f"todo:{primary_key}", CACHETTL, Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
+            connection_cache.setex(f"todo:{primary_key}", CACHETTL, helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")

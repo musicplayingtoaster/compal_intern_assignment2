@@ -1,9 +1,9 @@
 from typing import Annotated
-from fastapi import FastAPI, Body, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Body, WebSocket, WebSocketDisconnect, Depends
 from fastapi.staticfiles import StaticFiles
-from .helper import Todo, ConnectionManager
+import redis.asyncio as aioredis
 import uvicorn
-from . import database, postgre_database
+from . import database, postgre_database, helper
 import json
 
 
@@ -11,7 +11,7 @@ import json
 app = FastAPI()
 
 @app.post("/submit")
-async def create_todo(data: Todo):
+async def create_todo(data: helper.Todo):
     # websocket to tell all clients new todo has been added and push change that way
     # do not return the retrieve
 
@@ -35,23 +35,25 @@ async def delete_todo(id: Annotated[int, Body()]):
     return "deleted"
 
 @app.put("/update") # Note: "todo" is empty. this is just for transfering data for resolved
-async def update_todo(data: Todo):
+async def update_todo(data: helper.Todo):
     postgre_database.update_todo(data.id, data.resolved)
     # database.update_todo(data.id, data.resolved)
     return "updated"
 
 
 # Websocket stuff
-manager = ConnectionManager()
+manager = helper.ConnectionManager()
 
 @app.websocket("/ws")
-async def handle_websockets(websocket: WebSocket):
+async def handle_websockets(websocket: WebSocket, channel:str = helper.CHANNEL_NAME, pubsub_client: aioredis.Redis = Depends(helper.get_rdpubsub_conn)):
     await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_json()
-            recent = await create_todo(Todo.model_validate(data))
-            await manager.broadcast(json.dumps(recent))
+            recent = json.dumps(await create_todo(helper.Todo.model_validate(data)))
+            
+            # await manager.broadcast(recent)
+            await pubsub_client.publish(channel, recent)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 

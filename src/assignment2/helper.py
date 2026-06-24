@@ -125,3 +125,8 @@ async def get_rdcache_async_conn() -> aioredis.Redis:
     if rediscache_async_client is None:
         raise RuntimeError("Async Redis Cache client is not initialized")
     return rediscache_async_client
+
+async def get_rdpubsub_conn() -> aioredis.Redis:
+    if redispubsub_client is None:
+        raise RuntimeError("Redis PubSub client is not initialized")
+    return redispubsub_client
