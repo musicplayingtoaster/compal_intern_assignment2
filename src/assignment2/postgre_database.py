@@ -87,7 +87,7 @@ def retrieve_all_todos() -> tuple:
                 if not raw_json:
                     continue
                 try:
-                    todos.append(tuple(Todo.model_validate_json(connection_cache.get(key)).model_dump().values()))
+                    todos.append(tuple(Todo.model_validate_json(raw_json).model_dump().values()))
                     cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
                 except Exception:
                     continue
