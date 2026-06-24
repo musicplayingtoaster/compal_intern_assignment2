@@ -72,7 +72,7 @@ def retrieve_all_todos() -> tuple:
         cached_primary_keys = []
         with redis.Redis(**connection_params_cache) as connection_cache:
             for key in connection_cache.scan_iter(match='todo:*'):
-                todos.append(Todo.model_validate_json(connection_cache.get(key)).model_dump())
+                todos.append(Todo.model_validate_json(connection_cache.get(key)).model_dump().values())
 
                 cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
             
