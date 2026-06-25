@@ -22,7 +22,8 @@ async def create_todo(data: helper.Todo, conn_db: AsyncConnection, conn_cache: a
     #return postgre_database.retrieve_latest_todo()
 
     # database.add_todo(data)
-    return await postgre_database.add_todo(data, conn_db, conn_cache)
+    await postgre_database.add_todo(data, conn_db, conn_cache)
+    return await postgre_database.retrieve_latest_todo(conn_db, conn_cache)
 
 @app.get("/load")
 async def load_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn), 
@@ -37,7 +38,7 @@ async def load_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn),
 async def delete_todo(id: Annotated[int, Body()], 
                       conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), 
                       conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
-    postgre_database.remove_todo(id, conn_db, conn_cache)
+    await postgre_database.remove_todo(id, conn_db, conn_cache)
     # database.remove_todo(id)
     return "deleted"
 

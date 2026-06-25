@@ -106,19 +106,19 @@ def retrieve_all_todos(conn_db: Connection, conn_cache: redis.Redis) -> tuple:
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aioredis.Redis) -> tuple:
+async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aioredis.Redis):
     try:
         #async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
         async with conn_db.cursor() as cursor:
             await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
 
-            global latest_cache_key
-            primary_key = await cursor.fetchone()
-            latest_cache_key = f"todo:{primary_key[0]}"
-            todo.id = primary_key[0]
-            await conn_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
+        global latest_cache_key
+        primary_key = await cursor.fetchone()
+        latest_cache_key = f"todo:{primary_key[0]}"
+        todo.id = primary_key[0]
+        await conn_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
-            return await retrieve_latest_todo(conn_db, conn_cache)
+            #return await retrieve_latest_todo(conn_db, conn_cache)
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
@@ -128,7 +128,7 @@ async def remove_todo(primary_key:int, conn_db: AsyncConnection, conn_cache: aio
         async with conn_db.cursor() as cursor:
             await cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
 
-            await conn_cache.delete(f"todo:{primary_key}")
+        await conn_cache.delete(f"todo:{primary_key}")
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
