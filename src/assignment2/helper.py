@@ -54,19 +54,23 @@ class ConnectionManager:
 
 CHANNEL_NAME = "global_broadcast"
 manager = ConnectionManager()
-redispubsub_client = aioredis.Redis | None = None
+redispubsub_client: aioredis.Redis | None = None
 
 async def redis_listener():
-    pubsub = redispubsub_client.pubsub()
-    await pubsub.subscribe(CHANNEL_NAME)
-
-    try:
-        # hears published message back in main.py and then sends a websocket broadcast to client
-        async for message in pubsub.listen():
-            if message["type"] == "message":
-                await manager.broadcast(message["data"])
-    except asyncio.CancelledError:
-        await pubsub.unsubscribe(CHANNEL_NAME)
+    if redispubsub_client == None:
+        return
+    
+    async with redispubsub_client.pubsub() as pubsub:
+        try:
+            await pubsub.subscribe(CHANNEL_NAME)
+            # hears published message back in main.py and then sends a websocket broadcast to client
+            async for message in pubsub.listen():
+                if message["type"] == "message":
+                    await manager.broadcast(message["data"])
+        except asyncio.CancelledError:
+            print("Redis listener cancelled")
+        except Exception as e:
+            print("Redis error:", e)
 
 postgres_sync_pool: ConnectionPool = None
 postgres_async_pool: AsyncConnectionPool = None
@@ -76,8 +80,8 @@ rediscache_async_client: aioredis.Redis | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global postgres_sync_pool, postgres_async_pool, rediscache_sync_client, rediscache_async_client
-    postgres_sync_pool = ConnectionPool(**connection_params_db, open=False)
-    postgres_async_pool = ConnectionPool(**connection_params_db, open=False)
+    postgres_sync_pool = ConnectionPool(kwargs=connection_params_db, open=False)
+    postgres_async_pool = ConnectionPool(kwargs=connection_params_db, open=False)
     
     sync_pool = redis.ConnectionPool(**connection_params_redis)
     async_pool = aioredis.ConnectionPool(**connection_params_redis)
@@ -94,7 +98,11 @@ async def lifespan(app: FastAPI):
     yield
 
     listener_task.cancel()
-    
+    try:
+        await listener_task
+    except asyncio.CancelledError:
+        pass
+
     if postgres_sync_pool:
         postgres_sync_pool.close()
     if postgres_async_pool:
