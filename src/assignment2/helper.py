@@ -24,10 +24,16 @@ connection_params_db = {
     "password": os.environ.get('DB_PASSWORD'),
 }
 
-connection_params_redis = {
+connection_params_redis_cache = {
     "host": os.environ.get('RDC_HOST'),
     "port": os.environ.get('RDC_PORT'),
     "db": 0,
+    "decode_responses": True,
+}
+
+connection_params_redis_pubsub = {
+    "host": os.environ.get('RDPS_HOST'),
+    "port": os.environ.get('RDPS_PORT'),
     "decode_responses": True,
 }
 
@@ -65,6 +71,7 @@ async def redis_listener():
             await pubsub.subscribe(CHANNEL_NAME)
             # hears published message back in main.py and then sends a websocket broadcast to client
             async for message in pubsub.listen():
+                print("message:", message)
                 if message["type"] == "message":
                     await manager.broadcast(message["data"])
         except asyncio.CancelledError:
@@ -83,9 +90,9 @@ async def lifespan(app: FastAPI):
     postgres_sync_pool = ConnectionPool(kwargs=connection_params_db, open=False)
     postgres_async_pool = AsyncConnectionPool(kwargs=connection_params_db, open=False)
     
-    sync_pool = redis.ConnectionPool(**connection_params_redis)
-    async_pool = aioredis.ConnectionPool(**connection_params_redis)
-    pubsub_pool = aioredis.ConnectionPool(**connection_params_redis)
+    sync_pool = redis.ConnectionPool(**connection_params_redis_cache)
+    async_pool = aioredis.ConnectionPool(**connection_params_redis_cache)
+    pubsub_pool = aioredis.ConnectionPool(**connection_params_redis_pubsub)
 
     rediscache_sync_client = redis.Redis(connection_pool=sync_pool)
     rediscache_async_client = aioredis.Redis(connection_pool=async_pool)
