@@ -3,7 +3,7 @@ import asyncio
 import redis
 import redis.asyncio as aioredis
 from pydantic import BaseModel
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket
 from contextlib import asynccontextmanager
 from psycopg import Connection, AsyncConnection
 from psycopg_pool import ConnectionPool, AsyncConnectionPool
@@ -61,6 +61,7 @@ async def redis_listener():
     await pubsub.subscribe(CHANNEL_NAME)
 
     try:
+        # hears published message back in main.py and then sends a websocket broadcast to client
         async for message in pubsub.listen():
             if message["type"] == "message":
                 await manager.broadcast(message["data"])

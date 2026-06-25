@@ -1,9 +1,7 @@
 from . import helper
 import psycopg
 import os
-import redis
 from redis.exceptions import RedisError
-import redis.asyncio as aioredis
 from dotenv import load_dotenv
 import re
 

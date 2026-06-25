@@ -8,7 +8,7 @@ import json
 
 
 
-app = FastAPI()
+app = FastAPI(lifespan=helper.lifespan)
 
 @app.post("/submit")
 async def create_todo(data: helper.Todo):
@@ -53,6 +53,8 @@ async def handle_websockets(websocket: WebSocket, channel:str = helper.CHANNEL_N
             recent = json.dumps(await create_todo(helper.Todo.model_validate(data)))
             
             # await manager.broadcast(recent)
+
+            # publishes to channel -> move to helper.redis_listener to follow trail
             await pubsub_client.publish(channel, recent)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
