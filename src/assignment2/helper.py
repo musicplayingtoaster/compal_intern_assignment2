@@ -35,6 +35,7 @@ connection_params_redis_pubsub = {
     "host": os.environ.get('RDPS_HOST'),
     "port": os.environ.get('RDPS_PORT'),
     "decode_responses": True,
+    "socket_timeout": None,
 }
 
 class ConnectionManager:

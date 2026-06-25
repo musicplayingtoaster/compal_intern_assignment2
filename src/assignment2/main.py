@@ -50,7 +50,7 @@ async def update_todo(data: helper.Todo,
 
 
 # Websocket stuff
-manager = helper.ConnectionManager()
+manager = helper.manager
 
 @app.websocket("/ws")
 async def handle_websockets(websocket: WebSocket, 
