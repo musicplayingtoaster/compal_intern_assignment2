@@ -85,15 +85,19 @@ redispubsub_client: aioredis.Redis | None = None
 EXCHANGE_NAME = "todo_exchange"
 ROUTING_KEY = "global_alerts"
 
-async def rabbitmq_listener():
+async def rabbitmq_connector():
     while True:
         try:
             print("Attempting to Connect to RabbitMQ")
             connection = await aio_pika.connect_robust(**connection_params_rabbitmq)
-            break
+            print("Connected!")
+            return connection
         except (aio_pika.exceptions.AMQPConnectionError, OSError) as e:
             print(f"RabbitMQ connection failed ({e}). Retrying in 3 seconds...")
             await asyncio.sleep(3)
+
+async def rabbitmq_listener():
+    connection = await rabbitmq_connector()
 
     async with connection: # Lock
         channel = await connection.channel()

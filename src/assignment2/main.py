@@ -79,7 +79,7 @@ async def handle_websockets(websocket: WebSocket,
                             conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
     await manager.connect(websocket)
     try:
-        connection = await aio_pika.connect_robust(**helper.connection_params_rabbitmq)
+        connection = await helper.rabbitmq_connector()
         channel = await connection.channel()
         exchange = await channel.declare_exchange(helper.EXCHANGE_NAME, type="topic")
 
