@@ -1,7 +1,7 @@
 from . import helper
 import psycopg
 from psycopg import Connection, AsyncConnection
-from fastapi import Depends
+from fastapi import Depends, APIRouter
 import os
 import redis
 import redis.asyncio as aioredis
@@ -47,7 +47,7 @@ def init_todo_list(conn_db: Connection = Depends(helper.get_pg_sync_conn)) -> No
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
 
-async def retrieve_latest_todo(conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)) -> tuple:
+async def retrieve_latest_todo(conn_db: AsyncConnection, conn_cache: aioredis.Redis) -> tuple:
     try:
         global latest_cache_key
         if latest_cache_key != None:
@@ -72,7 +72,7 @@ def get_numeric_sort_key(key):
     match = re.search(r'\d+', key[5:])
     return int(match.group()) if match else 0
 
-def retrieve_all_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: redis.Redis = Depends(helper.get_rdcache_sync_conn)) -> tuple:
+def retrieve_all_todos(conn_db: Connection, conn_cache: redis.Redis) -> tuple:
     try:
         todos = []
         cached_primary_keys = []
@@ -107,7 +107,7 @@ def retrieve_all_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn), c
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-async def add_todo(todo:helper.Todo, conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)) -> tuple:
+async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aioredis.Redis) -> tuple:
     try:
         #async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
         async with conn_db.cursor() as cursor:
@@ -120,11 +120,11 @@ async def add_todo(todo:helper.Todo, conn_db: AsyncConnection = Depends(helper.g
             todo.id = primary_key[0]
             await conn_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
-            return await retrieve_latest_todo()
+            return await retrieve_latest_todo(conn_db, conn_cache)
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def remove_todo(primary_key:int, conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: redis.Redis = Depends(helper.get_rdcache_sync_conn)) -> tuple:
+def remove_todo(primary_key:int, conn_db: Connection, conn_cache: redis.Redis) -> tuple:
     try:
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
         with conn_db.cursor() as cursor:
@@ -135,7 +135,7 @@ def remove_todo(primary_key:int, conn_db: Connection = Depends(helper.get_pg_syn
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def update_todo(primary_key:int, _resolved:int, conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: redis.Redis = Depends(helper.get_rdcache_sync_conn)) -> tuple:
+def update_todo(primary_key:int, _resolved:int, conn_db: Connection, conn_cache: redis.Redis) -> tuple:
     try:
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
         with conn_db.cursor() as cursor:
