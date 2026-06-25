@@ -1,5 +1,7 @@
 from . import helper
 import psycopg
+from psycopg import Connection, AsyncConnection
+from fastapi import Depends
 import os
 from redis.exceptions import RedisError
 from dotenv import load_dotenv
@@ -68,35 +70,35 @@ def get_numeric_sort_key(key):
     match = re.search(r'\d+', key[5:])
     return int(match.group()) if match else 0
 
-def retrieve_all_todos() -> tuple:
+def retrieve_all_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: Connection = Depends(helper.get_rdcache_sync_conn)) -> tuple:
     try:
         todos = []
         cached_primary_keys = []
-        with helper.get_rdcache_sync_conn() as connection_cache:
-            unordered_keys = list(connection_cache.scan_iter(match='todo:*'))
-            sorted_keys = sorted(unordered_keys, key=get_numeric_sort_key)
+        # with helper.get_rdcache_sync_conn() as connection_cache:
+        unordered_keys = list(conn_cache.scan_iter(match='todo:*'))
+        sorted_keys = sorted(unordered_keys, key=get_numeric_sort_key)
 
-            pipeline = connection_cache.pipeline()
-            for key in sorted_keys:
-                pipeline.get(key)
-            cached_values = pipeline.execute()
+        pipeline = conn_cache.pipeline()
+        for key in sorted_keys:
+            pipeline.get(key)
+        cached_values = pipeline.execute()
 
-            for key, raw_json in zip(sorted_keys, cached_values):
-                if not raw_json:
-                    continue
-                try:
-                    todos.append(tuple(helper.Todo.model_validate_json(raw_json).model_dump().values()))
-                    cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
-                except Exception:
-                    continue
-            
-            print(f"retrieved from cache: {cached_primary_keys}")
+        for key, raw_json in zip(sorted_keys, cached_values):
+            if not raw_json:
+                continue
+            try:
+                todos.append(tuple(helper.Todo.model_validate_json(raw_json).model_dump().values()))
+                cached_primary_keys.append(re.sub(r'\D+', '', key[5:]))
+            except Exception:
+                continue
+        
+        print(f"retrieved from cache: {cached_primary_keys}")
 
-        with helper.get_pg_sync_conn() as connection_db:
-            cursor = connection_db.cursor()
-            cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
-            all_rows = cursor.fetchall()
-            todos = all_rows + todos
+        # with helper.get_pg_sync_conn() as connection_db:
+        cursor = conn_db.cursor()
+        cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
+        all_rows = cursor.fetchall()
+        todos = all_rows + todos
 
         print(todos)
         return todos
