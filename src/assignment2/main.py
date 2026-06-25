@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from . import database, postgre_database, helper
 import json
+import asyncio
 
 from psycopg import Connection, AsyncConnection
 import redis
@@ -89,6 +90,7 @@ async def handle_websockets(websocket: WebSocket,
             recent = json.dumps(await create_todo(helper.Todo.model_validate(data), conn_db, conn_cache))
         
             await exchange.publish(aio_pika.Message(body=recent.encode()), routing_key=helper.ROUTING_KEY)
+            await asyncio.sleep(0)
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
