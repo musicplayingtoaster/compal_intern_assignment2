@@ -94,9 +94,6 @@ async def handle_websockets(websocket: WebSocket,
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    finally:
-        if 'connection' in locals() and not connection.is_closed:
-            await connection.close()
 
 # app mount at the end, as if before the static file application will capture the request before the @app stuff does
 # also you can't put this in main() ig... weird...
