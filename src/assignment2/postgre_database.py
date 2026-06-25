@@ -109,11 +109,11 @@ def retrieve_all_todos(conn_db: Connection, conn_cache: redis.Redis) -> tuple:
 async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aioredis.Redis):
     try:
         #async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
+        global latest_cache_key
         async with conn_db.cursor() as cursor:
             await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
-
-        global latest_cache_key
-        primary_key = await cursor.fetchone()
+            primary_key = await cursor.fetchone()
+        
         latest_cache_key = f"todo:{primary_key[0]}"
         todo.id = primary_key[0]
         await conn_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
