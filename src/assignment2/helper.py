@@ -37,7 +37,7 @@ connection_params_redis_pubsub = {
 
 connection_params_rabbitmq = {
     "host": os.environ.get('RBMQ_HOST'),
-    "port": os.environ.get('RBMQ_PORT'),
+    "port": int(os.environ.get('RBMQ_PORT')),
 }
 
 class ConnectionManager:
@@ -65,28 +65,36 @@ CHANNEL_NAME = "global_broadcast"
 manager = ConnectionManager()
 redispubsub_client: aioredis.Redis | None = None
 
-async def redis_listener():
-    if redispubsub_client == None:
-        return
+# async def redis_listener():
+#     if redispubsub_client == None:
+#         return
     
-    async with redispubsub_client.pubsub() as pubsub:
-        try:
-            await pubsub.subscribe(CHANNEL_NAME)
-            # hears published message back in main.py and then sends a websocket broadcast to client
-            async for message in pubsub.listen():
-                print("message:", message)
-                if message["type"] == "message":
-                    await manager.broadcast(message["data"])
-        except asyncio.CancelledError:
-            print("Redis listener cancelled")
-        except Exception as e:
-            print("Redis error:", e)
+#     async with redispubsub_client.pubsub() as pubsub:
+#         try:
+#             await pubsub.subscribe(CHANNEL_NAME)
+#             # hears published message back in main.py and then sends a websocket broadcast to client
+#             async for message in pubsub.listen():
+#                 print("message:", message)
+#                 if message["type"] == "message":
+#                     await manager.broadcast(message["data"])
+#         except asyncio.CancelledError:
+#             print("Redis listener cancelled")
+#         except Exception as e:
+#             print("Redis error:", e)
 
 EXCHANGE_NAME = "todo_exchange"
 ROUTING_KEY = "global_alerts"
 
 async def rabbitmq_listener():
-    connection = await aio_pika.connect_robust(**connection_params_rabbitmq)
+    while True:
+        try:
+            print("Attempting to Connect to RabbitMQ")
+            connection = await aio_pika.connect_robust(**connection_params_rabbitmq)
+            break
+        except (aio_pika.exceptions.AMQPConnectionError, OSError) as e:
+            print(f"RabbitMQ connection failed ({e}). Retrying in 3 seconds...")
+            await asyncio.sleep(3)
+
     async with connection: # Lock
         channel = await connection.channel()
 
