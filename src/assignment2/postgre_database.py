@@ -42,7 +42,6 @@ def init_todo_list(conn_db: Connection = Depends(helper.get_pg_sync_conn)) -> No
                     resolved INTEGER NOT NULL DEFAULT 0
                 )
             ''')
-        conn_db.commit()
     except psycopg.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
@@ -112,7 +111,6 @@ async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aiore
         #async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
         async with conn_db.cursor() as cursor:
             await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
-            await conn_db.commit()
 
             global latest_cache_key
             primary_key = await cursor.fetchone()
@@ -129,7 +127,6 @@ def remove_todo(primary_key:int, conn_db: Connection, conn_cache: redis.Redis) -
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
         with conn_db.cursor() as cursor:
             cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
-            conn_db.commit()
 
             conn_cache.delete(f"todo:{primary_key}")
     except psycopg.OperationalError as e:
@@ -140,9 +137,10 @@ def update_todo(primary_key:int, _resolved:int, conn_db: Connection, conn_cache:
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
         with conn_db.cursor() as cursor:
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
-            conn_db.commit()
 
             updated_todo = cursor.fetchone()
-            conn_cache.setex(f"todo:{primary_key}", CACHETTL, helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
+            conn_cache.setex(f"todo:{primary_key}", 
+                             CACHETTL, 
+                             helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
