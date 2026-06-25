@@ -62,7 +62,7 @@ async def handle_websockets(websocket: WebSocket,
     try:
         while True:
             data = await websocket.receive_json()
-            recent = json.dumps(await create_todo(helper.Todo.model_validate(data, conn_db, conn_cache)))
+            recent = json.dumps(await create_todo(helper.Todo.model_validate(data), conn_db, conn_cache))
             
             # await manager.broadcast(recent)
 
