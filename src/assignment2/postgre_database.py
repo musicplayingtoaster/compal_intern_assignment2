@@ -29,10 +29,10 @@ connection_params_cache = {
     "decode_responses": True,
 }
 
-def init_todo_list() -> None:
+def init_todo_list(conn_db: Connection = Depends(helper.get_pg_sync_conn)) -> None:
     try:
-        with helper.get_pg_sync_conn() as connection_db:
-            cursor = connection_db.cursor()
+        #with helper.get_pg_sync_conn() as connection_db:
+        with conn_db.cursor() as cursor:
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS todo_list (
                     id SERIAL PRIMARY KEY,
@@ -40,28 +40,28 @@ def init_todo_list() -> None:
                     resolved INTEGER NOT NULL DEFAULT 0
                 )
             ''')
-            connection_db.commit()
+        conn_db.commit()
     except psycopg.OperationalError as e:
         print("Failed to open database:", e, "(in short, you failed lmao.)")
 
 
-async def retrieve_latest_todo() -> tuple:
+async def retrieve_latest_todo(conn_db: Connection = Depends(helper.get_pg_async_conn), conn_cache: Connection = Depends(helper.get_rdcache_async_conn)) -> tuple:
     try:
         global latest_cache_key
         if latest_cache_key != None:
-            async with helper.get_rdcache_async_conn() as connection_cache:
-                todo = await connection_cache.get(latest_cache_key)
-                print("retrieved from cache!")
-                if todo != None:
-                    return tuple(helper.Todo.model_validate_json(todo).model_dump().values())
+            #async with helper.get_rdcache_async_conn() as connection_cache:
+            todo = await conn_cache.get(latest_cache_key)
+            print("retrieved from cache!")
+            if todo != None:
+                return tuple(helper.Todo.model_validate_json(todo).model_dump().values())
         
-        async with await helper.get_pg_async_conn() as connection_db:
-            async with connection_db.cursor() as cursor:
-                await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
-                latest_row = await cursor.fetchone()
-                print("retrieved from db!")
-                if latest_row != None:
-                    return latest_row
+        #async with await helper.get_pg_async_conn() as connection_db:
+        async with conn_db.cursor() as cursor:
+            await cursor.execute("SELECT * FROM todo_list ORDER BY id DESC LIMIT 1")
+            latest_row = await cursor.fetchone()
+            print("retrieved from db!")
+            if latest_row != None:
+                return latest_row
         
     except (psycopg.OperationalError, RedisError) as e:
         print("Failed to open database and/or cache:", e)
@@ -95,52 +95,52 @@ def retrieve_all_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn), c
         print(f"retrieved from cache: {cached_primary_keys}")
 
         # with helper.get_pg_sync_conn() as connection_db:
-        cursor = conn_db.cursor()
-        cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
-        all_rows = cursor.fetchall()
-        todos = all_rows + todos
+        with conn_db.cursor() as cursor:
+            cursor.execute("SELECT * FROM todo_list WHERE id != ALL(%s)ORDER BY id", (cached_primary_keys,))
+            all_rows = cursor.fetchall()
+            todos = all_rows + todos
 
         print(todos)
         return todos
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-async def add_todo(todo:helper.Todo) -> tuple:
+async def add_todo(todo:helper.Todo, conn_db: Connection = Depends(helper.get_pg_async_conn), conn_cache: Connection = Depends(helper.get_rdcache_async_conn)) -> tuple:
     try:
-        async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
-            async with connection_db.cursor() as cursor:
-                await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
-                await connection_db.commit()
+        #async with await helper.get_pg_async_conn() as connection_db, helper.get_rdcache_async_conn() as connection_cache:
+        async with conn_db.cursor() as cursor:
+            await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
+            await conn_db.commit()
 
-                global latest_cache_key
-                primary_key = await cursor.fetchone()
-                latest_cache_key = f"todo:{primary_key[0]}"
-                todo.id = primary_key[0]
-                await connection_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
+            global latest_cache_key
+            primary_key = await cursor.fetchone()
+            latest_cache_key = f"todo:{primary_key[0]}"
+            todo.id = primary_key[0]
+            await conn_cache.setex(latest_cache_key, CACHETTL, todo.model_dump_json()) 
 
-                return await retrieve_latest_todo()
+            return await retrieve_latest_todo()
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def remove_todo(primary_key:int) -> tuple:
+def remove_todo(primary_key:int, conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: Connection = Depends(helper.get_rdcache_sync_conn)) -> tuple:
     try:
-        with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
-            cursor = connection_db.cursor()
+        #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
+        with conn_db.cursor() as cursor:
             cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
-            connection_db.commit()
+            conn_db.commit()
 
-            connection_cache.delete(f"todo:{primary_key}")
+            conn_cache.delete(f"todo:{primary_key}")
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def update_todo(primary_key:int, _resolved:int) -> tuple:
+def update_todo(primary_key:int, _resolved:int, conn_db: Connection = Depends(helper.get_pg_sync_conn), conn_cache: Connection = Depends(helper.get_rdcache_sync_conn)) -> tuple:
     try:
-        with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
-            cursor = connection_db.cursor()
+        #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
+        with conn_db.cursor() as cursor:
             cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
-            connection_db.commit()
+            conn_db.commit()
 
             updated_todo = cursor.fetchone()
-            connection_cache.setex(f"todo:{primary_key}", CACHETTL, helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
+            conn_cache.setex(f"todo:{primary_key}", CACHETTL, helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")

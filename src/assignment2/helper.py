@@ -79,7 +79,7 @@ rediscache_async_client: aioredis.Redis | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global postgres_sync_pool, postgres_async_pool, rediscache_sync_client, rediscache_async_client
+    global postgres_sync_pool, postgres_async_pool, rediscache_sync_client, rediscache_async_client, redispubsub_client
     postgres_sync_pool = ConnectionPool(kwargs=connection_params_db, open=False)
     postgres_async_pool = AsyncConnectionPool(kwargs=connection_params_db, open=False)
     
