@@ -8,6 +8,7 @@ import json
 from psycopg import Connection, AsyncConnection
 import redis
 import redis.asyncio as aioredis
+import aio_pika
 
 
 
@@ -52,24 +53,47 @@ async def update_todo(data: helper.Todo,
 # Websocket stuff
 manager = helper.manager
 
+# @app.websocket("/ws")
+# async def handle_websockets(websocket: WebSocket, 
+#                             channel:str = helper.CHANNEL_NAME, 
+#                             pubsub_client: aioredis.Redis = Depends(helper.get_rdpubsub_conn), 
+#                             conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), 
+#                             conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
+#     await manager.connect(websocket)
+#     try:
+#         while True:
+#             data = await websocket.receive_json()
+#             recent = json.dumps(await create_todo(helper.Todo.model_validate(data), conn_db, conn_cache))
+            
+#             # await manager.broadcast(recent)
+
+#             # publishes to channel -> move to helper.redis_listener to follow trail
+#             await pubsub_client.publish(channel, recent)
+#     except WebSocketDisconnect:
+#         manager.disconnect(websocket)
+
 @app.websocket("/ws")
 async def handle_websockets(websocket: WebSocket, 
                             channel:str = helper.CHANNEL_NAME, 
-                            pubsub_client: aioredis.Redis = Depends(helper.get_rdpubsub_conn), 
                             conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), 
                             conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
     await manager.connect(websocket)
     try:
+        connection = await aio_pika.connect_robust(helper.connection_params_rabbitmq)
+        channel = await connection.channel()
+        exchange = await channel.declare_exchange(helper.EXCHANGE_NAME, type="topic")
+
         while True:
             data = await websocket.receive_json()
             recent = json.dumps(await create_todo(helper.Todo.model_validate(data), conn_db, conn_cache))
-            
-            # await manager.broadcast(recent)
+        
+            await exchange.publish(aio_pika.Message(body=recent.encode()), routing_key=helper.ROUTING_KEY)
 
-            # publishes to channel -> move to helper.redis_listener to follow trail
-            await pubsub_client.publish(channel, recent)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    finally:
+        if 'connection' in locals() and not connection.is_closed:
+            await connection.close()
 
 # app mount at the end, as if before the static file application will capture the request before the @app stuff does
 # also you can't put this in main() ig... weird...

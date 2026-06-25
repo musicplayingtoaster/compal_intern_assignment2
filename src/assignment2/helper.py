@@ -1,7 +1,4 @@
-import os
-import asyncio
-import redis
-import redis.asyncio as aioredis
+import os, asyncio, redis, redis.asyncio as aioredis, aio_pika
 from pydantic import BaseModel
 from fastapi import FastAPI, WebSocket
 from contextlib import asynccontextmanager
@@ -36,6 +33,11 @@ connection_params_redis_pubsub = {
     "port": os.environ.get('RDPS_PORT'),
     "decode_responses": True,
     "socket_timeout": None,
+}
+
+connection_params_rabbitmq = {
+    "host": os.environ.get('RBMQ_HOST'),
+    "port": os.environ.get('RBMQ_PORT'),
 }
 
 class ConnectionManager:
@@ -80,6 +82,26 @@ async def redis_listener():
         except Exception as e:
             print("Redis error:", e)
 
+EXCHANGE_NAME = "todo_exchange"
+ROUTING_KEY = "global_alerts"
+
+async def rabbitmq_listener():
+    connection = await aio_pika.connect_robust(**connection_params_rabbitmq)
+    async with connection: # Lock
+        channel = await connection.channel()
+
+        exchange = await channel.declare_exchange(EXCHANGE_NAME, type="topic")
+        queue = await channel.declare_queue(exclusive=True)
+        await queue.bind(exchange, routing_key=ROUTING_KEY)
+
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+                async with message.process():
+                    payload = message.body.decode()
+                    await manager.broadcast(payload)
+
+    
+
 postgres_sync_pool: ConnectionPool = None
 postgres_async_pool: AsyncConnectionPool = None
 rediscache_sync_client: redis.Redis | None = None
@@ -98,7 +120,9 @@ async def lifespan(app: FastAPI):
     rediscache_sync_client = redis.Redis(connection_pool=sync_pool)
     rediscache_async_client = aioredis.Redis(connection_pool=async_pool)
     redispubsub_client = aioredis.Redis(connection_pool=pubsub_pool)
-    listener_task = asyncio.create_task(redis_listener())
+    
+    #listener_task = asyncio.create_task(redis_listener())
+    listener_task = asyncio.create_task(rabbitmq_listener())
 
     postgres_sync_pool.open()
     await postgres_async_pool.open()
