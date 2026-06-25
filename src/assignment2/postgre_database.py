@@ -122,13 +122,13 @@ async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aiore
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def remove_todo(primary_key:int, conn_db: Connection, conn_cache: redis.Redis) -> tuple:
+async def remove_todo(primary_key:int, conn_db: AsyncConnection, conn_cache: aioredis.Redis) -> tuple:
     try:
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
-        with conn_db.cursor() as cursor:
-            cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
+        async with conn_db.cursor() as cursor:
+            await cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
 
-            conn_cache.delete(f"todo:{primary_key}")
+            await conn_cache.delete(f"todo:{primary_key}")
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 

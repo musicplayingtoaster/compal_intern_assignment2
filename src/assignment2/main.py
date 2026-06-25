@@ -35,8 +35,8 @@ async def load_todos(conn_db: Connection = Depends(helper.get_pg_sync_conn),
 
 @app.delete("/delete")
 async def delete_todo(id: Annotated[int, Body()], 
-                      conn_db: Connection = Depends(helper.get_pg_sync_conn), 
-                      conn_cache: redis.Redis = Depends(helper.get_rdcache_sync_conn)):
+                      conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), 
+                      conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
     postgre_database.remove_todo(id, conn_db, conn_cache)
     # database.remove_todo(id)
     return "deleted"
