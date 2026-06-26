@@ -45,8 +45,8 @@ async def delete_todo(id: Annotated[int, Body()],
 
 @app.put("/update") # Note: "todo" is empty. this is just for transfering data for resolved
 async def update_todo(data: helper.Todo, 
-                      conn_db: Connection = Depends(helper.get_pg_sync_conn), 
-                      conn_cache: redis.Redis = Depends(helper.get_rdcache_sync_conn)):
+                      conn_db: AsyncConnection = Depends(helper.get_pg_async_conn), 
+                      conn_cache: aioredis.Redis = Depends(helper.get_rdcache_async_conn)):
     postgre_database.update_todo(data.id, data.resolved, conn_db, conn_cache)
     # database.update_todo(data.id, data.resolved)
     return "updated"

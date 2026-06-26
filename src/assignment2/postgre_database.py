@@ -112,6 +112,7 @@ async def add_todo(todo:helper.Todo, conn_db: AsyncConnection, conn_cache: aiore
         global latest_cache_key
         async with conn_db.cursor() as cursor:
             await cursor.execute("INSERT INTO todo_list (todo) VALUES (%(todo)s) RETURNING id", todo.model_dump()) # resolved default value = 0
+            await conn_db.commit()
             primary_key = await cursor.fetchone()
         
         latest_cache_key = f"todo:{primary_key[0]}"
@@ -127,19 +128,21 @@ async def remove_todo(primary_key:int, conn_db: AsyncConnection, conn_cache: aio
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
         async with conn_db.cursor() as cursor:
             await cursor.execute("DELETE FROM todo_list WHERE id = %s", (primary_key,))
+            await conn_db.commit()
 
         await conn_cache.delete(f"todo:{primary_key}")
     except psycopg.OperationalError as e:
         print("Failed to open database and/or cache:", e, "(in short, you failed lmao.)")
 
-def update_todo(primary_key:int, _resolved:int, conn_db: Connection, conn_cache: redis.Redis) -> tuple:
+async def update_todo(primary_key:int, _resolved:int, conn_db: AsyncConnection, conn_cache: aioredis.Redis) -> tuple:
     try:
         #with helper.get_pg_sync_conn() as connection_db, helper.get_rdcache_sync_conn() as connection_cache:
-        with conn_db.cursor() as cursor:
-            cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
+        async with conn_db.cursor() as cursor:
+            await cursor.execute("UPDATE todo_list SET resolved = %s WHERE id = %s RETURNING todo", (_resolved, primary_key,))
+            await conn_db.commit()
 
-            updated_todo = cursor.fetchone()
-            conn_cache.setex(f"todo:{primary_key}", 
+            updated_todo = await cursor.fetchone()
+            conn_cache.setex(f"todo:{primary_key}",     
                              CACHETTL, 
                              helper.Todo(id=primary_key, todo=updated_todo[0], resolved=_resolved).model_dump_json())
     except psycopg.OperationalError as e:
