@@ -36,6 +36,8 @@ services:
         condition: service_healthy
       redis-cache:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   app-2:
     build: .
@@ -58,6 +60,8 @@ services:
       postgres-db:
         condition: service_healthy
       redis-cache:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
   
   postgres-db:
@@ -98,7 +102,7 @@ services:
     networks:
       - todo-app-network
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./redis-cache.conf:/usr/local/etc/redis/redis.conf:ro
       - rdcdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -107,6 +111,41 @@ services:
       retries: 3
       start_period: 5s
 
+        #  redis-pubsub:
+        #    image: redis:alpine3.23
+        #    container_name: redis-pubsub
+        #    restart: always
+        #    ports:
+        #      - "6380:6379"
+        #    networks:
+        #      - todo-app-network
+        #    volumes:
+        #      - ./redis-pubsub.conf:/usr/local/etc/redis/redis.conf:ro
+        #    healthcheck:
+        #      test: ["CMD", "redis-cli", "ping"]
+        #      interval: 10s
+        #      timeout: 5s
+        #      retries: 3
+        #      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - todo-app-network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   todo-app-network:
     driver: bridge
@@ -114,3 +153,5 @@ networks:
 volumes:
   pgdata:
   rdcdata:
+  rabbitmq_data:
+  rabbitmq_logs:
